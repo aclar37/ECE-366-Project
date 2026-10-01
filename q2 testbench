@@ -1,0 +1,65 @@
+module testbench;
+
+    reg [3:0] A, B;
+    reg Cin;
+
+    wire [3:0] S;
+    wire Cout;
+
+    four_bit_RCA_RCS dut(
+        .A(A),
+        .B(B),
+        .Cin(Cin),
+        .S(S),
+        .Cout(Cout)
+    );
+
+    initial begin
+
+        $dumpfile("dump.vcd");
+        $dumpvars(0, testbench);
+
+        $display("Test                  A     B    Cin | Cout  S");
+        $monitor("                      %b  %b   %b  |   %b   %b",
+                 A, B, Cin, Cout, S);
+
+        // 1. Unsigned addition: 5 + 3 = 8
+        $display("Unsigned addition: 5 + 3");
+        A = 4'b0101;
+        B = 4'b0011;
+        Cin = 0;
+        #10;
+
+        // 2. Unsigned subtraction: 9 - 5 = 4
+        $display("Unsigned subtraction: 9 - 5");
+        A = 4'b1001;
+        B = 4'b0101;
+        Cin = 1;
+        #10;
+
+        // 3. Signed addition: 3 + (-2) = 1
+        $display("Signed addition: 3 + (-2)");
+        A = 4'b0011;
+        B = 4'b1110; // -2
+        Cin = 0;
+        #10;
+
+        // 4. Signed subtraction: 2 - (-3) = 5
+        $display("Signed subtraction: 2 - (-3)");
+        A = 4'b0010;
+        B = 4'b1101; // -3
+        Cin = 1;
+        #10;
+
+        // 5. Carry-out: 12 + 5 = 17
+        $display("Carry-out: 12 + 5");
+        A = 4'b1100;
+        B = 4'b0101;
+        Cin = 0;
+        #10;
+
+        $finish;
+
+    end
+
+endmodule
