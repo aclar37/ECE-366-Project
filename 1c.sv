@@ -1,6 +1,6 @@
 include "design1a.sv"
 
-module four_bit_RCA_RCS(A, B, Cin, S, Cout);
+module four_bit_RCA(A, B, Cin, S, Cout);
   input [3:0] A, B;
   input Cin;
   output [3:0] S;
