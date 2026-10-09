@@ -1,52 +1,94 @@
-// Structural 1-bit full adder from Problem 1(b)
-module one_bit_full_adder(A, B, Cin, S, Cout);
+`include "design1c.sv"
 
-    input A, B, Cin;
-    output S, Cout;
-
-    wire sum1;
-    wire carry1;
-    wire carry2;
-
-    xor g1(sum1, A, B);
-    and g2(carry1, A, B);
-
-    xor g3(S, sum1, Cin);
-    and g4(carry2, sum1, Cin);
-
-    or g5(Cout, carry1, carry2);
-
+//prop and gen values
+module four_bit_PG (
+  input [3:0] A, B,
+  output P,
+  output G
+);
+  
+  wire p0, p1, p2, p3;
+  wire g0, g1, g2, g3;
+  
+  //prop calculation
+  or (p0, A[0], B[0]);
+  or (p1, A[1], B[1]);
+  or (p2, A[2], B[2]);
+  or (p3, A[3], B[3]);
+  
+  //gen calculation
+  
+  and (g0, A[0], B[0]);
+  and (g1, A[1], B[1]);
+  and (g2, A[2], B[2]);
+  and (g3, A[3], B[3]);
+  
+  //P_3:0 calculation
+  wire p_01, p_23;
+  and (p_01, p0, p1);
+  and (p_23, p2, p3);
+  and (P, p_01, p_23);
+  
+  //G_3:0 calculation
+  wire and1, or1, and2, or2, and3;
+  and (and1, g0, p1);
+  or (or1, and1, g1);
+  and (and2, or1, p2);
+  or (or2, and2, g2);
+  and (and3, or2, p3);
+  or (G, and3, g3);
 endmodule
 
-module four_bit_RCA_RCS(A, B, Cin, S, Cout);
-
-    input [3:0] A, B;
-    input Cin;
-    output [3:0] S;
-    output Cout;
-
-    wire [3:0] modifiedB;
-    wire c1, c2, c3;
-
-    xor x0(modifiedB[0], B[0], Cin);
-    xor x1(modifiedB[1], B[1], Cin);
-    xor x2(modifiedB[2], B[2], Cin);
-    xor x3(modifiedB[3], B[3], Cin);
-
-    one_bit_full_adder fa0(
-        A[0], modifiedB[0], Cin, S[0], c1
-    );
-
-    one_bit_full_adder fa1(
-        A[1], modifiedB[1], c1, S[1], c2
-    );
-
-    one_bit_full_adder fa2(
-        A[2], modifiedB[2], c2, S[2], c3
-    );
-
-    one_bit_full_adder fa3(
-        A[3], modifiedB[3], c3, S[3], Cout
-    );
-
+module cla_ (
+  input G,
+  input P,
+  input Cin,
+  output Cout
+);
+  
+  wire p_c_in;
+  and (p_c_in, P, Cin);
+  or (Cout, G, p_c_in);
 endmodule
+  
+module CLA (
+  input [31:0] A, B,
+  input Cin,
+  output [31:0] S,
+  output Cout
+);
+  
+  wire [7:0] P, G;
+  wire [8:0] C; //Cin to every block as well as Cout
+  
+  assign C[0] = Cin;
+  
+  genvar i;
+  generate
+    for (i = 0; i <  8; i = i +1) begin: blocks // getting p and g for each block
+      
+      four_bit_PG pg(
+      	.A(A[4*i + 3 : 4*i]),
+      	.B(B[4*i + 3 : 4*i]),
+      	.P(P[i]),
+      	.G(G[i])
+      );
+      
+      cla_ cl ( //look ahead carry calculation
+        .G(G[i]), 
+             .P(P[i]),
+             .Cin(C[i]),
+             .Cout(C[i+1])
+             );
+      
+             four_bit_RCA rca (
+               .A(A[4*i + 3 : 4*i]),
+               .B(B[4*i + 3 : 4*i]), 
+               .Cin(C[i]),
+			   .S(S[4*i + 3 : 4*i]),
+               .Cout() // skip RCA Cout, as the CLA one is faster
+             );
+             end
+             endgenerate
+             assign Cout = C[8];
+             endmodule
