@@ -18,8 +18,8 @@ module testbench;
         $dumpvars(0, testbench);
 
       $display("A    B    Cin | Cout S");
-      $monitor("%10d %10d  %b  |   %b       %10d | %b        %10b",
-                 A, B, Cin, Cout, S;
+      $monitor("%10d %10d  %b  |   %b       %10d  ",
+               A, B, Cin, Cout, S);
 
       A = 5; B = 3; Cin = 0; #10; // 1. Unsigned addition
       A = 4088; B = 8; Cin = 0; #10; // 2. cuases propagation across blocks
