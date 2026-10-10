@@ -1,104 +1,94 @@
-module CLA(A, B, Cin, S, Cout);
+`include "design1c.sv"
 
-  input [31:0] A, B;
-  input Cin;
-
-  output [31:0] S;
-  output Cout;
-
-  // P and G for each of the eight 4-bit blocks
-  wire [7:0] P, G;
-
-  // Three levels of block carry-lookahead logic
-  wire [7:0] P1, G1;
-  wire [7:0] P2, G2;
-  wire [7:0] P3, G3;
-
-  wire [7:0] T1, T2, T3;
-  wire [7:0] TC;
-  wire [8:0] C;
-
-  assign C[0] = Cin;
-  assign Cout = C[8];
-
-  genvar i;
-
-  generate
-    // Compute P/G and the sum for each 4-bit block
-    for (i = 0; i < 8; i = i + 1) begin: blocks
-
-      four_bit_PG pg(
-        .A(A[4*i + 3 : 4*i]),
-        .B(B[4*i + 3 : 4*i]),
-        .P(P[i]),
-        .G(G[i])
-      );
-
-      four_bit_RCA rca(
-        .A(A[4*i + 3 : 4*i]),
-        .B(B[4*i + 3 : 4*i]),
-        .Cin(C[i]),
-        .S(S[4*i + 3 : 4*i]),
-        .Cout()
-      );
-
-    end
-
-    // Level 1: combine neighboring blocks
-    for (i = 0; i < 8; i = i + 1) begin: level1
-
-      if (i >= 1) begin
-        and (P1[i], P[i], P[i-1]);
-        and (T1[i], P[i], G[i-1]);
-        or  (G1[i], G[i], T1[i]);
-      end
-      else begin
-        assign P1[i] = P[i];
-        assign G1[i] = G[i];
-        assign T1[i] = 1'b0;
-      end
-
-    end
-
-    // Level 2: combine groups separated by two blocks
-    for (i = 0; i < 8; i = i + 1) begin: level2
-
-      if (i >= 2) begin
-        and (P2[i], P1[i], P1[i-2]);
-        and (T2[i], P1[i], G1[i-2]);
-        or  (G2[i], G1[i], T2[i]);
-      end
-      else begin
-        assign P2[i] = P1[i];
-        assign G2[i] = G1[i];
-        assign T2[i] = 1'b0;
-      end
-
-    end
-
-    // Level 3: combine groups separated by four blocks
-    for (i = 0; i < 8; i = i + 1) begin: level3
-
-      if (i >= 4) begin
-        and (P3[i], P2[i], P2[i-4]);
-        and (T3[i], P2[i], G2[i-4]);
-        or  (G3[i], G2[i], T3[i]);
-      end
-      else begin
-        assign P3[i] = P2[i];
-        assign G3[i] = G2[i];
-        assign T3[i] = 1'b0;
-      end
-
-    end
-
-    // Calculate every block carry using the original Cin
-    for (i = 0; i < 8; i = i + 1) begin: carries
-
-      and (TC[i], P3[i], Cin);
-      or  (C[i+1], G3[i], TC[i]);
-
-    end
-  endgenerate
-
+//prop and gen values
+module four_bit_PG (
+  input [3:0] A, B,
+  output P,
+  output G
+);
+  
+  wire p0, p1, p2, p3;
+  wire g0, g1, g2, g3;
+  
+  //prop calculation
+  or (p0, A[0], B[0]);
+  or (p1, A[1], B[1]);
+  or (p2, A[2], B[2]);
+  or (p3, A[3], B[3]);
+  
+  //gen calculation
+  
+  and (g0, A[0], B[0]);
+  and (g1, A[1], B[1]);
+  and (g2, A[2], B[2]);
+  and (g3, A[3], B[3]);
+  
+  //P_3:0 calculation
+  wire p_01, p_23;
+  and (p_01, p0, p1);
+  and (p_23, p2, p3);
+  and (P, p_01, p_23);
+  
+  //G_3:0 calculation
+  wire and1, or1, and2, or2, and3;
+  and (and1, g0, p1);
+  or (or1, and1, g1);
+  and (and2, or1, p2);
+  or (or2, and2, g2);
+  and (and3, or2, p3);
+  or (G, and3, g3);
 endmodule
+
+module cla_ (
+  input G,
+  input P,
+  input Cin,
+  output Cout
+);
+  
+  wire p_c_in;
+  and (p_c_in, P, Cin);
+  or (Cout, G, p_c_in);
+endmodule
+  
+module CLA (
+  input [31:0] A, B,
+  input Cin,
+  output [31:0] S,
+  output Cout
+);
+  
+  wire [7:0] P, G;
+  wire [8:0] C; //Cin to every block as well as Cout
+  
+  assign C[0] = Cin;
+  
+  genvar i;
+  generate
+    for (i = 0; i <  8; i = i +1) begin: blocks // getting p and g for each block
+      
+      four_bit_PG pg(
+      	.A(A[4*i + 3 : 4*i]),
+      	.B(B[4*i + 3 : 4*i]),
+      	.P(P[i]),
+      	.G(G[i])
+      );
+      
+      cla_ cl ( //look ahead carry calculation
+        .G(G[i]), 
+             .P(P[i]),
+             .Cin(C[i]),
+             .Cout(C[i+1])
+             );
+      
+             four_bit_RCA rca (
+               .A(A[4*i + 3 : 4*i]),
+               .B(B[4*i + 3 : 4*i]), 
+               .Cin(C[i]),
+			   .S(S[4*i + 3 : 4*i]),
+               .Cout() // skip RCA Cout, as the CLA one is faster
+             );
+             end
+             endgenerate
+             assign Cout = C[8];
+             endmodule
