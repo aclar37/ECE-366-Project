@@ -2,6 +2,7 @@ module PPA(A, B, Cin, S, Cout);
 
 input [15:0] A, B;
 input Cin;
+
 output [15:0] S;
 output Cout;
 
@@ -85,7 +86,7 @@ and AND_P0_m1(p0_m1, P[0], Pm1);
 and AND_T0_m1(t0_m1, P[0], Cin);
 or  OR_G0_m1(g0_m1, G[0], t0_m1);
 
-// Second prefix level
+// Second prefix level 
 and AND_P14_11(p14_11, p14_13, p12_11);
 and AND_T14_11(t14_11, p14_13, g12_11);
 or  OR_G14_11(g14_11, g14_13, t14_11);
@@ -118,7 +119,7 @@ and AND_P1_m1(p1_m1, P[1], p0_m1);
 and AND_T1_m1(t1_m1, P[1], g0_m1);
 or  OR_G1_m1(g1_m1, G[1], t1_m1);
 
-// Third prefix level
+// Third prefix level 
 and AND_P14_7(p14_7, p14_11, p10_7);
 and AND_T14_7(t14_7, p14_11, g10_7);
 or  OR_G14_7(g14_7, g14_11, t14_7);
@@ -143,8 +144,8 @@ and AND_P5_m1(p5_m1, p5_3, p2_m1);
 and AND_T5_m1(t5_m1, p5_3, g2_m1);
 or  OR_G5_m1(g5_m1, g5_3, t5_m1);
 
-and AND_P4_m1(p4_m1, P[4], p2_m1);
-and AND_T4_m1(t4_m1, P[4], g2_m1);
+and AND_P4_m1(p4_m1, P[4], p3_m1);
+and AND_T4_m1(t4_m1, P[4], g3_m1);
 or  OR_G4_m1(g4_m1, G[4], t4_m1);
 
 and AND_P3_m1(p3_m1, P[3], p2_m1);
