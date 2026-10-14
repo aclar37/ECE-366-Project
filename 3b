@@ -1,0 +1,62 @@
+module testbench;
+
+  reg [15:0] A, B;
+  reg Cin;
+  wire [15:0] S;
+  wire Cout;
+  reg [16:0] expected;
+  integer errors;
+
+  PPA dut(
+    .A(A),
+    .B(B),
+    .Cin(Cin),
+    .S(S),
+    .Cout(Cout)
+  );
+
+  task check;
+    input [15:0] a, b;
+    input cin;
+    begin
+      A = a;
+      B = b;
+      Cin = cin;
+      expected = {1'b0, a} + {1'b0, b} + cin;
+      #10;
+
+      if ({Cout, S} !== expected) begin
+        $display("FAIL: A=%h B=%h Cin=%b result=%h expected=%h",
+                 A, B, Cin, {Cout, S}, expected);
+        errors = errors + 1;
+      end
+      else begin
+        $display("PASS: A=%h B=%h Cin=%b Cout=%b S=%h",
+                 A, B, Cin, Cout, S);
+      end
+    end
+  endtask
+
+  initial begin
+    $dumpfile("dump.vcd");
+    $dumpvars(0, testbench);
+    errors = 0;
+
+    check(16'd5, 16'd3, 1'b0);
+    check(16'd4088, 16'd8, 1'b0);
+    check(16'd100, -16'd25, 1'b0);
+    check(16'd15, 16'd15, 1'b1);
+    check(16'hFFFF, 16'd1, 1'b0);
+
+    check(16'd9, ~16'd5, 1'b1);
+    check(16'd2, ~(-16'd3), 1'b1);
+
+    check(16'd24, 16'd8, 1'b0);
+    check(16'hFFFF, 16'd0, 1'b1);
+    check(16'd0, 16'd0, 1'b0);
+
+    $display("Total errors: %0d", errors);
+    $finish;
+  end
+
+endmodule
