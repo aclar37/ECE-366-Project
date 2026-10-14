@@ -1,0 +1,59 @@
+module KS(A, B, Cin, S, Cout);
+
+  input [15:0] A, B;
+  input Cin;
+  output [15:0] S;
+  output Cout;
+
+  wire [15:0] P [0:4];
+  wire [15:0] G [0:4];
+  wire [16:0] C;
+
+  assign C[0] = Cin;
+
+  genvar i, level, bit_index;
+
+  generate
+    for (i = 0; i < 16; i = i + 1) begin: precompute
+      xor (P[0][i], A[i], B[i]);
+      and (G[0][i], A[i], B[i]);
+    end
+
+    for (level = 0; level < 4; level = level + 1) begin: stages
+      for (bit_index = 0; bit_index < 16;
+           bit_index = bit_index + 1) begin: bits
+
+        if (bit_index >= (1 << level)) begin: combine
+          wire t;
+
+          and (P[level+1][bit_index],
+               P[level][bit_index],
+               P[level][bit_index-(1 << level)]);
+
+          and (t,
+               P[level][bit_index],
+               G[level][bit_index-(1 << level)]);
+
+          or (G[level+1][bit_index],
+              G[level][bit_index],
+              t);
+        end
+        else begin: pass_through
+          assign P[level+1][bit_index] = P[level][bit_index];
+          assign G[level+1][bit_index] = G[level][bit_index];
+        end
+      end
+    end
+
+    for (i = 0; i < 16; i = i + 1) begin: postcompute
+      wire t;
+
+      and (t, P[4][i], Cin);
+      or (C[i+1], G[4][i], t);
+      xor (S[i], P[0][i], C[i]);
+    end
+  endgenerate
+
+  assign Cout = C[16];
+
+endmodule
