@@ -1,0 +1,38 @@
+module testbench;
+  reg [15:0] A, B;
+  reg Cin;
+  wire [15:0] S;
+  wire Cout;
+  
+  KS dut(
+    .A(A),
+    .B(B),
+    .Cin(Cin),
+    .S(S),
+    .Cout(Cout)
+  );
+  
+  initial begin
+    $dumpfile("dump.vcd");
+    $dumpvars(0, testbench);
+    $display("A       B       Cin | Cout S");
+    $monitor("%h    %h    %b   |  %b    %h", 
+             A, B, Cin, Cout, S);
+    
+    A = 5; B = 3; Cin = 0; #10; // 1. Unsigned addition
+    A = 4088; B = 8; Cin = 0; #10; // 2. cuases propagation across blocks
+    A = 100; B = -25; Cin = 0; #10; //3. signed addition  
+    A = 15; B = 15; Cin = 1; #10; // 4. prop w/ Cin = 1
+    A = -1; B = 1; Cin = 0; #10; //5. Carry out generated at MSB (signed)
+
+    A = 65535; B = 1; Cin = 0; #10; // 6. Carry propagation across all 16 bits
+    A = 65535; B = 0; Cin = 1; #10; // 7. Carry propagation with Cin = 1
+    A = 32767; B = 1; Cin = 0; #10; // 8. Signed overflow
+    A = 43690; B = 21845; Cin = 0; #10; // 9. Alternating bit patterns
+    A = 0; B = 0; Cin = 0; #10; // 10. Zero inputs
+    
+    
+    $finish;
+  end
+
+endmodule
